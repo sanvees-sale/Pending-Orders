@@ -21,22 +21,20 @@
             measurementId: "G-75TB9D5L8Q"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Global functions for Firebase operations
-        window.fbSaveOrder = async function(type, orders) {
+        window.fbSaveOrder = async function(type, dateStr, orders) {
             try {
-                await set(ref(db, 'orders/' + type), orders);
+                await set(ref(db, `orders/${type}/${dateStr}`), orders);
             } catch (error) {
                 console.error("Error saving data to Firebase: ", error);
             }
         };
 
-        window.fbLoadOrders = async function(type) {
+        window.fbLoadOrders = async function(type, dateStr) {
             try {
-                const snapshot = await get(child(ref(db), 'orders/' + type));
+                const snapshot = await get(child(ref(db), `orders/${type}/${dateStr}`));
                 if (snapshot.exists()) {
                     return snapshot.val();
                 } else {
@@ -44,6 +42,21 @@
                 }
             } catch (error) {
                 console.error("Error loading data from Firebase: ", error);
+                return null;
+            }
+        };
+
+        // All data fetch for carrying forward pending orders
+        window.fbLoadAllDates = async function(type) {
+            try {
+                const snapshot = await get(child(ref(db), `orders/${type}`));
+                if (snapshot.exists()) {
+                    return snapshot.val();
+                } else {
+                    return null;
+                }
+            } catch (error) {
+                console.error("Error loading all dates from Firebase: ", error);
                 return null;
             }
         };
@@ -128,16 +141,36 @@
 
         h2 {
             color: var(--text-main);
-            margin: 0 0 6px 0;
+            margin: 0 0 10px 0;
             font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.025em;
         }
 
-        .date-display {
+        .date-picker-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .date-picker-group label {
             font-size: 13px;
+            font-weight: 600;
             color: var(--text-muted);
-            font-weight: 500;
+        }
+
+        .date-picker-group input[type="date"] {
+            border: 1px solid var(--border-dark);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 13px;
+            background: white;
+            outline: none;
+            cursor: pointer;
         }
 
         /* Form Controls */
@@ -148,7 +181,7 @@
             flex-wrap: wrap;
         }
 
-        input {
+        input[type="text"] {
             flex: 1;
             padding: 10px 14px;
             border: 1px solid var(--border-dark);
@@ -160,7 +193,7 @@
             background-color: #fff;
         }
 
-        input:focus {
+        input[type="text"]:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
@@ -277,7 +310,7 @@
                 max-width: 100%;
                 border: none;
             }
-            .tabs, .form-group, .print-btn, .delete-link {
+            .tabs, .form-group, .print-btn, .delete-link, .date-picker-group {
                 display: none !important;
             }
             .status-select {
@@ -310,7 +343,10 @@
     <div id="tab-tony" class="tab-content active">
         <div class="page-header">
             <h2>Sanvee's by Tony Pending Orders</h2>
-            <div class="date-display" id="dateTony"></div>
+            <div class="date-picker-group">
+                <label for="datePickerTony">Select Date:</label>
+                <input type="date" id="datePickerTony" onchange="onDateChange('tony')">
+            </div>
         </div>
         <div class="form-group">
             <input type="text" id="tonyOrderNo" placeholder="Order Number / Customer Name">
@@ -335,7 +371,10 @@
     <div id="tab-sanvees" class="tab-content">
         <div class="page-header">
             <h2>Sanvee's Pending Orders</h2>
-            <div class="date-display" id="dateSanvees"></div>
+            <div class="date-picker-group">
+                <label for="datePickerSanvees">Select Date:</label>
+                <input type="date" id="datePickerSanvees" onchange="onDateChange('sanvees')">
+            </div>
         </div>
         <div class="form-group">
             <input type="text" id="sanveesOrderNo" placeholder="Order Number / Customer Name">
@@ -359,17 +398,17 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", async () => {
-        updateCurrentDate();
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        document.getElementById('datePickerTony').value = todayStr;
+        document.getElementById('datePickerSanvees').value = todayStr;
+
+        await checkAndCarryForwardPendingOrders('tony', todayStr);
+        await checkAndCarryForwardPendingOrders('sanvees', todayStr);
+
         await loadOrders('tony');
         await loadOrders('sanvees');
     });
-
-    function updateCurrentDate() {
-        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-        const currentDate = new Date().toLocaleDateString('en-US', options);
-        document.getElementById('dateTony').innerText = currentDate;
-        document.getElementById('dateSanvees').innerText = currentDate;
-    }
 
     function switchTab(tabName) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -384,22 +423,89 @@
         }
     }
 
+    async function onDateChange(type) {
+        const datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
+        const selectedDate = datePicker.value;
+        if (selectedDate) {
+            await checkAndCarryForwardPendingOrders(type, selectedDate);
+            await loadOrders(type);
+        }
+    }
+
+    // Automatically carry forward unresolved pending orders from previous dates
+    async function checkAndCarryForwardPendingOrders(type, targetDateStr) {
+        let allDatesData = await window.fbLoadAllDates(type);
+        if (!allDatesData) return;
+
+        let targetDateOrders = allDatesData[targetDateStr] || [];
+        
+        // Find all unique past dates strictly before targetDateStr
+        let pastDates = Object.keys(allDatesData).filter(d => d < targetDateStr).sort();
+        
+        let pendingMap = new Map();
+        // Pre-populate with target date's existing entries to avoid duplicates
+        targetDateOrders.forEach(o => pendingMap.set(o.orderNo, o));
+
+        let updated = false;
+
+        for (let pDate of pastDates) {
+            let dayOrders = allDatesData[pDate] || [];
+            for (let order of dayOrders) {
+                // If it is pending, check if it was later resolved (sent/cancelled) on any subsequent day or target date
+                let isResolvedLater = false;
+                
+                // Check future dates and target date for status changes of this specific order
+                for (let checkDate of [...pastDates.filter(d => d > pDate), targetDateStr]) {
+                    let checkOrders = allDatesData[checkDate] || [];
+                    let foundMatch = checkOrders.find(o => o.orderNo === order.orderNo);
+                    if (foundMatch && foundMatch.status !== 'pending') {
+                        isResolvedLater = true;
+                        break;
+                    }
+                }
+
+                if (order.status === 'pending' && !isResolvedLater) {
+                    if (!pendingMap.has(order.orderNo)) {
+                        pendingMap.set(order.orderNo, { 
+                            orderNo: order.orderNo, 
+                            orderReason: order.orderReason, 
+                            status: 'pending' 
+                        });
+                        updated = true;
+                    }
+                }
+            }
+        }
+
+        if (updated || targetDateOrders.length !== pendingMap.size) {
+            let finalOrders = Array.from(pendingMap.values());
+            await window.fbSaveOrder(type, targetDateStr, finalOrders);
+        }
+    }
+
     async function addOrder(type) {
         let orderNoInput = document.getElementById(type + 'OrderNo');
         let reasonInput = document.getElementById(type + 'Reason');
+        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
         
         let orderNo = orderNoInput.value.trim();
         let orderReason = reasonInput.value.trim();
+        let selectedDate = datePicker.value;
+
+        if (!selectedDate) {
+            alert("Please select a date first!");
+            return;
+        }
 
         if (orderNo === "" || orderReason === "") {
             alert("Please fill in both Order Number and Reason!");
             return;
         }
 
-        let orders = (await window.fbLoadOrders(type)) || [];
+        let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         
         orders.push({ orderNo, orderReason, status: 'pending' });
-        await window.fbSaveOrder(type, orders);
+        await window.fbSaveOrder(type, selectedDate, orders);
 
         orderNoInput.value = "";
         reasonInput.value = "";
@@ -408,12 +514,17 @@
     }
 
     async function loadOrders(type) {
-        let orders = (await window.fbLoadOrders(type)) || [];
+        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
+        let selectedDate = datePicker.value;
+
+        if (!selectedDate) return;
+
+        let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         let tbody = document.getElementById(type + 'TableBody');
         tbody.innerHTML = "";
 
         if (orders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-muted); border-bottom: 1px solid var(--border);"></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-muted); border-bottom: 1px solid var(--border);">No orders found for this date.</td></tr>`;
             return;
         }
 
@@ -437,16 +548,22 @@
     }
 
     async function updateStatus(type, index, selectElement) {
-        let orders = (await window.fbLoadOrders(type)) || [];
+        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
+        let selectedDate = datePicker.value;
+
+        let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         orders[index].status = selectElement.value;
-        await window.fbSaveOrder(type, orders);
+        await window.fbSaveOrder(type, selectedDate, orders);
         selectElement.className = 'status-select status-' + selectElement.value;
     }
 
     async function deleteOrder(type, index) {
-        let orders = (await window.fbLoadOrders(type)) || [];
+        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
+        let selectedDate = datePicker.value;
+
+        let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         orders.splice(index, 1);
-        await window.fbSaveOrder(type, orders);
+        await window.fbSaveOrder(type, selectedDate, orders);
         await loadOrders(type);
     }
 </script>
