@@ -90,6 +90,38 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--border);
+            position: relative;
+        }
+
+        /* Top Bar for Checking Previous Date */
+        .top-checking-bar {
+            position: absolute;
+            top: 25px;
+            right: 40px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .top-checking-bar label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .top-checking-bar input[type="date"] {
+            border: 1px solid var(--border-dark);
+            border-radius: 6px;
+            padding: 3px 6px;
+            font-size: 12px;
+            background: white;
+            outline: none;
+            cursor: pointer;
         }
 
         /* Tabs Design */
@@ -140,36 +172,10 @@
 
         h2 {
             color: var(--text-main);
-            margin: 0 0 10px 0;
+            margin: 0 0 6px 0;
             font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.025em;
-        }
-
-        .date-picker-group {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #f1f5f9;
-            padding: 6px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        .date-picker-group label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-
-        .date-picker-group input[type="date"] {
-            border: 1px solid var(--border-dark);
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 13px;
-            background: white;
-            outline: none;
-            cursor: pointer;
         }
 
         /* Form Controls */
@@ -243,7 +249,7 @@
 
         th, td {
             padding: 12px 16px;
-            text-align: center; /* Text and headers centered inside borders */
+            text-align: center;
             vertical-align: middle;
             font-size: 14px;
             border-bottom: 1px solid var(--border);
@@ -310,11 +316,10 @@
                 max-width: 100%;
                 border: none;
             }
-            .tabs, .form-group, .print-btn, .delete-link, .date-picker-group {
+            .tabs, .form-group, .print-btn, .delete-link, .top-checking-bar {
                 display: none !important;
             }
             
-            /* Show Date in Print explicitly below Header */
             .print-date-title {
                 display: block !important;
                 text-align: center;
@@ -350,6 +355,12 @@
 <body>
 
 <div class="container">
+    <!-- Top Right Checking Date Option -->
+    <div class="top-checking-bar">
+        <label for="checkDateInput">Check Date:</label>
+        <input type="date" id="checkDateInput" onchange="onCheckingDateChange()">
+    </div>
+
     <!-- Tab Buttons -->
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tony')">Sanvee's by Tony</button>
@@ -360,10 +371,6 @@
     <div id="tab-tony" class="tab-content active">
         <div class="page-header">
             <h2>Sanvee's by Tony Pending Orders</h2>
-            <div class="date-picker-group">
-                <label for="datePickerTony">Select Date:</label>
-                <input type="date" id="datePickerTony" onchange="onDateChange('tony')">
-            </div>
         </div>
         <div class="print-date-title" id="printDateTitleTony"></div>
         <div class="form-group">
@@ -389,10 +396,6 @@
     <div id="tab-sanvees" class="tab-content">
         <div class="page-header">
             <h2>Sanvee's Pending Orders</h2>
-            <div class="date-picker-group">
-                <label for="datePickerSanvees">Select Date:</label>
-                <input type="date" id="datePickerSanvees" onchange="onDateChange('sanvees')">
-            </div>
         </div>
         <div class="print-date-title" id="printDateTitleSanvees"></div>
         <div class="form-group">
@@ -419,8 +422,8 @@
     document.addEventListener("DOMContentLoaded", async () => {
         const todayStr = new Date().toISOString().split('T')[0];
         
-        document.getElementById('datePickerTony').value = todayStr;
-        document.getElementById('datePickerSanvees').value = todayStr;
+        // Set top checking input to today's date automatically
+        document.getElementById('checkDateInput').value = todayStr;
 
         await checkAndCarryForwardPendingOrders('tony', todayStr);
         await checkAndCarryForwardPendingOrders('sanvees', todayStr);
@@ -442,13 +445,9 @@
         }
     }
 
-    async function onDateChange(type) {
-        const datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
-        const selectedDate = datePicker.value;
-        if (selectedDate) {
-            await checkAndCarryForwardPendingOrders(type, selectedDate);
-            await loadOrders(type);
-        }
+    async function onCheckingDateChange() {
+        await loadOrders('tony');
+        await loadOrders('sanvees');
     }
 
     async function checkAndCarryForwardPendingOrders(type, targetDateStr) {
@@ -496,14 +495,17 @@
         }
     }
 
+    async function getActiveDate() {
+        return document.getElementById('checkDateInput').value;
+    }
+
     async function addOrder(type) {
         let orderNoInput = document.getElementById(type + 'OrderNo');
         let reasonInput = document.getElementById(type + 'Reason');
-        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
         
         let orderNo = orderNoInput.value.trim();
         let orderReason = reasonInput.value.trim();
-        let selectedDate = datePicker.value;
+        let selectedDate = await getActiveDate();
 
         if (!selectedDate) {
             alert("Please select a date first!");
@@ -527,10 +529,11 @@
     }
 
     async function loadOrders(type) {
-        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
-        let selectedDate = datePicker.value;
-
+        let selectedDate = await getActiveDate();
         if (!selectedDate) return;
+
+        // Ensure carry forward runs if looking at today or past dates
+        await checkAndCarryForwardPendingOrders(type, selectedDate);
 
         let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         let tbody = document.getElementById(type + 'TableBody');
@@ -561,9 +564,7 @@
     }
 
     async function updateStatus(type, index, selectElement) {
-        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
-        let selectedDate = datePicker.value;
-
+        let selectedDate = await getActiveDate();
         let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         orders[index].status = selectElement.value;
         await window.fbSaveOrder(type, selectedDate, orders);
@@ -571,9 +572,7 @@
     }
 
     async function deleteOrder(type, index) {
-        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
-        let selectedDate = datePicker.value;
-
+        let selectedDate = await getActiveDate();
         let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         orders.splice(index, 1);
         await window.fbSaveOrder(type, selectedDate, orders);
@@ -581,8 +580,7 @@
     }
 
     function preparePrint(type) {
-        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
-        let selectedDate = datePicker.value;
+        let selectedDate = document.getElementById('checkDateInput').value;
         let titleEl = document.getElementById(type === 'tony' ? 'printDateTitleTony' : 'printDateTitleSanvees');
         
         if (selectedDate) {
