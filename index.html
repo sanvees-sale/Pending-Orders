@@ -46,7 +46,6 @@
             }
         };
 
-        // All data fetch for carrying forward pending orders
         window.fbLoadAllDates = async function(type) {
             try {
                 const snapshot = await get(child(ref(db), `orders/${type}`));
@@ -234,7 +233,7 @@
             background-color: #334155;
         }
 
-        /* Clean Normal Border Table */
+        /* Clean Normal Border Table & Centered Text */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -244,7 +243,8 @@
 
         th, td {
             padding: 12px 16px;
-            text-align: left;
+            text-align: center; /* Text and headers centered inside borders */
+            vertical-align: middle;
             font-size: 14px;
             border-bottom: 1px solid var(--border);
         }
@@ -313,11 +313,23 @@
             .tabs, .form-group, .print-btn, .delete-link, .date-picker-group {
                 display: none !important;
             }
+            
+            /* Show Date in Print explicitly below Header */
+            .print-date-title {
+                display: block !important;
+                text-align: center;
+                font-size: 15px;
+                font-weight: 600;
+                color: #334155;
+                margin-bottom: 20px;
+            }
+
             .status-select {
                 border: none;
                 appearance: none;
                 padding: 0;
                 font-weight: 600;
+                text-align-last: center;
             }
             table {
                 border-collapse: collapse;
@@ -326,7 +338,12 @@
             th, td {
                 border: 1px solid #94a3b8 !important;
                 padding: 10px;
+                text-align: center !important;
             }
+        }
+
+        .print-date-title {
+            display: none;
         }
     </style>
 </head>
@@ -348,12 +365,13 @@
                 <input type="date" id="datePickerTony" onchange="onDateChange('tony')">
             </div>
         </div>
+        <div class="print-date-title" id="printDateTitleTony"></div>
         <div class="form-group">
             <input type="text" id="tonyOrderNo" placeholder="Order Number / Customer Name">
             <input type="text" id="tonyReason" placeholder="Pending Reason (e.g. Size stock out)">
             <button class="add-btn" onclick="addOrder('tony')">Add Order</button>
         </div>
-        <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        <button class="print-btn" onclick="preparePrint('tony')">🖨️ Print / Save as PDF</button>
         <table>
             <thead>
                 <tr>
@@ -376,12 +394,13 @@
                 <input type="date" id="datePickerSanvees" onchange="onDateChange('sanvees')">
             </div>
         </div>
+        <div class="print-date-title" id="printDateTitleSanvees"></div>
         <div class="form-group">
             <input type="text" id="sanveesOrderNo" placeholder="Order Number / Customer Name">
             <input type="text" id="sanveesReason" placeholder="Pending Reason (e.g. Advance missing)">
             <button class="add-btn" onclick="addOrder('sanvees')">Add Order</button>
         </div>
-        <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        <button class="print-btn" onclick="preparePrint('sanvees')">🖨️ Print / Save as PDF</button>
         <table>
             <thead>
                 <tr>
@@ -432,18 +451,14 @@
         }
     }
 
-    // Automatically carry forward unresolved pending orders from previous dates
     async function checkAndCarryForwardPendingOrders(type, targetDateStr) {
         let allDatesData = await window.fbLoadAllDates(type);
         if (!allDatesData) return;
 
         let targetDateOrders = allDatesData[targetDateStr] || [];
-        
-        // Find all unique past dates strictly before targetDateStr
         let pastDates = Object.keys(allDatesData).filter(d => d < targetDateStr).sort();
         
         let pendingMap = new Map();
-        // Pre-populate with target date's existing entries to avoid duplicates
         targetDateOrders.forEach(o => pendingMap.set(o.orderNo, o));
 
         let updated = false;
@@ -451,10 +466,8 @@
         for (let pDate of pastDates) {
             let dayOrders = allDatesData[pDate] || [];
             for (let order of dayOrders) {
-                // If it is pending, check if it was later resolved (sent/cancelled) on any subsequent day or target date
                 let isResolvedLater = false;
                 
-                // Check future dates and target date for status changes of this specific order
                 for (let checkDate of [...pastDates.filter(d => d > pDate), targetDateStr]) {
                     let checkOrders = allDatesData[checkDate] || [];
                     let foundMatch = checkOrders.find(o => o.orderNo === order.orderNo);
@@ -565,6 +578,18 @@
         orders.splice(index, 1);
         await window.fbSaveOrder(type, selectedDate, orders);
         await loadOrders(type);
+    }
+
+    function preparePrint(type) {
+        let datePicker = document.getElementById(type === 'tony' ? 'datePickerTony' : 'datePickerSanvees');
+        let selectedDate = datePicker.value;
+        let titleEl = document.getElementById(type === 'tony' ? 'printDateTitleTony' : 'printDateTitleSanvees');
+        
+        if (selectedDate) {
+            let formattedDate = new Date(selectedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+            titleEl.innerText = "Date: " + formattedDate;
+        }
+        window.print();
     }
 </script>
 
