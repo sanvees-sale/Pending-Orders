@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Management Hub</title>
+    
+    <!-- Firebase SDK (Modular v10) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvrbLXqMHsTG2N3eePFFO900luktM4W60",
+            authDomain: "sanveepos.firebaseapp.com",
+            databaseURL: "https://sanveepos-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sanveepos",
+            storageBucket: "sanveepos.firebasestorage.app",
+            messagingSenderId: "708358963481",
+            appId: "1:708358963481:web:4273970ebc8fc8ec6ac588",
+            measurementId: "G-75TB9D5L8Q"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Global functions for Firebase operations
+        window.fbSaveOrder = async function(type, orders) {
+            try {
+                await set(ref(db, 'orders/' + type), orders);
+            } catch (error) {
+                console.error("Error saving data to Firebase: ", error);
+            }
+        };
+
+        window.fbLoadOrders = async function(type) {
+            try {
+                const snapshot = await get(child(ref(db), 'orders/' + type));
+                if (snapshot.exists()) {
+                    return snapshot.val();
+                } else {
+                    return null;
+                }
+            } catch (error) {
+                console.error("Error loading data from Firebase: ", error);
+                return null;
+            }
+        };
+    </script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --border-dark: #cbd5e1;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        /* Tabs Design */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .tab-btn {
+            padding: 10px 24px;
+            background-color: #f1f5f9;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            background-color: #e2e8f0;
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Typography & Header */
+        .page-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: var(--text-main);
+            margin: 0 0 6px 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .date-display {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Form Controls */
+        .form-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border-dark);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            min-width: 200px;
+            background-color: #fff;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .add-btn {
+            padding: 10px 20px;
+            background-color: #059669;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .add-btn:hover {
+            background-color: #047857;
+        }
+
+        .print-btn {
+            padding: 8px 16px;
+            background-color: #475569;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .print-btn:hover {
+            background-color: #334155;
+        }
+
+        /* Clean Normal Border Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+            background-color: white;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #334155;
+            font-weight: 600;
+            border-top: 1px solid var(--border);
+            border-bottom: 2px solid var(--border-dark);
+        }
+
+        /* Status Dropdown Design */
+        .status-select {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--border-dark);
+            cursor: pointer;
+            outline: none;
+        }
+
+        .status-pending {
+            background-color: #fef3c7;
+            color: #b45309;
+        }
+
+        .status-sent {
+            background-color: #d1fae5;
+            color: #047857;
+        }
+
+        .status-cancelled {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .delete-link {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 13px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        .delete-link:hover {
+            color: #dc2626;
+            text-decoration: underline;
+        }
+
+        /* Print Settings */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+                border: none;
+            }
+            .tabs, .form-group, .print-btn, .delete-link {
+                display: none !important;
+            }
+            .status-select {
+                border: none;
+                appearance: none;
+                padding: 0;
+                font-weight: 600;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            th, td {
+                border: 1px solid #94a3b8 !important;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Tab Buttons -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tony')">Sanvee's by Tony</button>
+        <button class="tab-btn" onclick="switchTab('sanvees')">Sanvee's</button>
+    </div>
+
+    <!-- TAB 1: Sanvee's by Tony -->
+    <div id="tab-tony" class="tab-content active">
+        <div class="page-header">
+            <h2>Sanvee's by Tony Pending Orders</h2>
+            <div class="date-display" id="dateTony"></div>
+        </div>
+        <div class="form-group">
+            <input type="text" id="tonyOrderNo" placeholder="Order Number / Customer Name">
+            <input type="text" id="tonyReason" placeholder="Pending Reason (e.g. Size stock out)">
+            <button class="add-btn" onclick="addOrder('tony')">Add Order</button>
+        </div>
+        <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        <table>
+            <thead>
+                <tr>
+                    <th width="8%">#</th>
+                    <th width="32%">Order Number / Details</th>
+                    <th width="35%">Pending Reason</th>
+                    <th width="25%">Action / Status</th>
+                </tr>
+            </thead>
+            <tbody id="tonyTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- TAB 2: Sanvee's -->
+    <div id="tab-sanvees" class="tab-content">
+        <div class="page-header">
+            <h2>Sanvee's Pending Orders</h2>
+            <div class="date-display" id="dateSanvees"></div>
+        </div>
+        <div class="form-group">
+            <input type="text" id="sanveesOrderNo" placeholder="Order Number / Customer Name">
+            <input type="text" id="sanveesReason" placeholder="Pending Reason (e.g. Advance missing)">
+            <button class="add-btn" onclick="addOrder('sanvees')">Add Order</button>
+        </div>
+        <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        <table>
+            <thead>
+                <tr>
+                    <th width="8%">#</th>
+                    <th width="32%">Order Number / Details</th>
+                    <th width="35%">Pending Reason</th>
+                    <th width="25%">Action / Status</th>
+                </tr>
+            </thead>
+            <tbody id="sanveesTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        updateCurrentDate();
+        await loadOrders('tony');
+        await loadOrders('sanvees');
+    });
+
+    function updateCurrentDate() {
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        const currentDate = new Date().toLocaleDateString('en-US', options);
+        document.getElementById('dateTony').innerText = currentDate;
+        document.getElementById('dateSanvees').innerText = currentDate;
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        if (tabName === 'tony') {
+            document.querySelector('.tabs button:nth-child(1)').classList.add('active');
+            document.getElementById('tab-tony').classList.add('active');
+        } else {
+            document.querySelector('.tabs button:nth-child(2)').classList.add('active');
+            document.getElementById('tab-sanvees').classList.add('active');
+        }
+    }
+
+    async function addOrder(type) {
+        let orderNoInput = document.getElementById(type + 'OrderNo');
+        let reasonInput = document.getElementById(type + 'Reason');
+        
+        let orderNo = orderNoInput.value.trim();
+        let orderReason = reasonInput.value.trim();
+
+        if (orderNo === "" || orderReason === "") {
+            alert("Please fill in both Order Number and Reason!");
+            return;
+        }
+
+        let orders = (await window.fbLoadOrders(type)) || [];
+        
+        orders.push({ orderNo, orderReason, status: 'pending' });
+        await window.fbSaveOrder(type, orders);
+
+        orderNoInput.value = "";
+        reasonInput.value = "";
+
+        await loadOrders(type);
+    }
+
+    async function loadOrders(type) {
+        let orders = (await window.fbLoadOrders(type)) || [];
+        let tbody = document.getElementById(type + 'TableBody');
+        tbody.innerHTML = "";
+
+        if (orders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-muted); border-bottom: 1px solid var(--border);"></td></tr>`;
+            return;
+        }
+
+        orders.forEach((order, index) => {
+            let statusClass = 'status-' + order.status;
+            let row = `<tr>
+                <td>${index + 1}</td>
+                <td><b>${order.orderNo}</b></td>
+                <td>${order.orderReason}</td>
+                <td>
+                    <select class="status-select ${statusClass}" onchange="updateStatus('${type}', ${index}, this)">
+                        <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                        <option value="sent" ${order.status === 'sent' ? 'selected' : ''}>Parcel Sent</option>
+                        <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                    </select>
+                    <button class="delete-link" onclick="deleteOrder('${type}', ${index})">✕</button>
+                </td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    async function updateStatus(type, index, selectElement) {
+        let orders = (await window.fbLoadOrders(type)) || [];
+        orders[index].status = selectElement.value;
+        await window.fbSaveOrder(type, orders);
+        selectElement.className = 'status-select status-' + selectElement.value;
+    }
+
+    async function deleteOrder(type, index) {
+        let orders = (await window.fbLoadOrders(type)) || [];
+        orders.splice(index, 1);
+        await window.fbSaveOrder(type, orders);
+        await loadOrders(type);
+    }
+</script>
+
+</body>
+</html>
