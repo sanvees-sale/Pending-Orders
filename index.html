@@ -714,11 +714,15 @@
             return;
         }
 
-        let totalAmount = 0;
+        let pendingTotalAmount = 0;
 
         orders.forEach((order, index) => {
             let orderAmount = parseFloat(order.amount) || 0;
-            totalAmount += orderAmount;
+            
+            // Add to total amount ONLY IF status is strictly 'pending'
+            if (!order.status || order.status === 'pending') {
+                pendingTotalAmount += orderAmount;
+            }
 
             let statusClass = 'status-' + order.status;
             let row = `<tr>
@@ -742,10 +746,10 @@
             tbody.innerHTML += row;
         });
 
-        // Append Total Row at the bottom
+        // Append Total Row at the bottom (shows only pending total)
         let totalRow = `<tr class="total-row">
-            <td colspan="3" style="text-align: right;">Total Amount:</td>
-            <td id="${type}TotalDisplay">৳${totalAmount.toLocaleString()}</td>
+            <td colspan="3" style="text-align: right;">Total Pending Amount:</td>
+            <td id="${type}TotalDisplay">৳${pendingTotalAmount.toLocaleString()}</td>
             <td></td>
         </tr>`;
         tbody.innerHTML += totalRow;
@@ -774,8 +778,7 @@
         orders[index].amount = parseFloat(inputElement.value) || 0;
         await window.fbSaveOrder(type, selectedDate, orders);
 
-        let totalAmount = orders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
-        document.getElementById(type + 'TotalDisplay').innerText = '৳' + totalAmount.toLocaleString();
+        recalculateTotal(type, orders);
     }
 
     async function updateStatus(type, index, selectElement) {
@@ -784,6 +787,18 @@
         orders[index].status = selectElement.value;
         await window.fbSaveOrder(type, selectedDate, orders);
         selectElement.className = 'status-select status-' + selectElement.value;
+
+        recalculateTotal(type, orders);
+    }
+
+    function recalculateTotal(type, orders) {
+        let pendingTotalAmount = 0;
+        orders.forEach(o => {
+            if (!o.status || o.status === 'pending') {
+                pendingTotalAmount += parseFloat(o.amount) || 0;
+            }
+        });
+        document.getElementById(type + 'TotalDisplay').innerText = '৳' + pendingTotalAmount.toLocaleString();
     }
 
     function promptDelete(type, index) {
