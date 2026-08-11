@@ -711,12 +711,15 @@
         }
 
         let pendingTotalAmount = 0;
+        let sentTotalAmount = 0;
 
         orders.forEach((order, index) => {
             let orderAmount = parseFloat(order.amount) || 0;
             
             if (!order.status || order.status === 'pending') {
                 pendingTotalAmount += orderAmount;
+            } else if (order.status === 'sent') {
+                sentTotalAmount += orderAmount;
             }
 
             let statusClass = 'status-' + order.status;
@@ -741,12 +744,17 @@
             tbody.innerHTML += row;
         });
 
-        let totalRow = `<tr class="total-row">
+        let totalRows = `<tr class="total-row">
             <td colspan="3" style="text-align: right;">Total Pending Amount:</td>
-            <td id="${type}TotalDisplay">৳${pendingTotalAmount.toLocaleString()}</td>
+            <td id="${type}PendingTotalDisplay">৳${pendingTotalAmount.toLocaleString()}</td>
+            <td></td>
+        </tr>
+        <tr class="total-row">
+            <td colspan="3" style="text-align: right;">Total Parcel Sent Amount:</td>
+            <td id="${type}SentTotalDisplay">৳${sentTotalAmount.toLocaleString()}</td>
             <td></td>
         </tr>`;
-        tbody.innerHTML += totalRow;
+        tbody.innerHTML += totalRows;
     }
 
     async function updateAmountInline(type, index, inputElement) {
@@ -755,7 +763,7 @@
         orders[index].amount = parseFloat(inputElement.value) || 0;
         await window.fbSaveOrder(type, selectedDate, orders);
 
-        recalculateTotal(type, orders);
+        recalculateTotals(type, orders);
     }
 
     async function updateStatus(type, index, selectElement) {
@@ -765,17 +773,24 @@
         await window.fbSaveOrder(type, selectedDate, orders);
         selectElement.className = 'status-select status-' + selectElement.value;
 
-        recalculateTotal(type, orders);
+        recalculateTotals(type, orders);
     }
 
-    function recalculateTotal(type, orders) {
+    function recalculateTotals(type, orders) {
         let pendingTotalAmount = 0;
+        let sentTotalAmount = 0;
+        
         orders.forEach(o => {
+            let amt = parseFloat(o.amount) || 0;
             if (!o.status || o.status === 'pending') {
-                pendingTotalAmount += parseFloat(o.amount) || 0;
+                pendingTotalAmount += amt;
+            } else if (o.status === 'sent') {
+                sentTotalAmount += amt;
             }
         });
-        document.getElementById(type + 'TotalDisplay').innerText = '৳' + pendingTotalAmount.toLocaleString();
+        
+        document.getElementById(type + 'PendingTotalDisplay').innerText = '৳' + pendingTotalAmount.toLocaleString();
+        document.getElementById(type + 'SentTotalDisplay').innerText = '৳' + sentTotalAmount.toLocaleString();
     }
 
     function promptDelete(type, index) {
