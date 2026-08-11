@@ -477,6 +477,11 @@
                 font-family: inherit;
                 font-size: 13px;
                 text-align: center;
+                /* Force full text to wrap and show fully during print without clipping or hiding */
+                overflow: visible !important;
+                white-space: pre-wrap !important;
+                word-break: break-word !important;
+                height: auto !important;
             }
 
             .status-select {
@@ -494,6 +499,7 @@
                 border: 1px solid #94a3b8 !important;
                 padding: 10px;
                 text-align: center !important;
+                vertical-align: middle !important;
             }
         }
 
@@ -719,7 +725,6 @@
         orders.forEach((order, index) => {
             let orderAmount = parseFloat(order.amount) || 0;
             
-            // Add to total amount ONLY IF status is strictly 'pending'
             if (!order.status || order.status === 'pending') {
                 pendingTotalAmount += orderAmount;
             }
@@ -746,7 +751,6 @@
             tbody.innerHTML += row;
         });
 
-        // Append Total Row at the bottom (shows only pending total)
         let totalRow = `<tr class="total-row">
             <td colspan="3" style="text-align: right;">Total Pending Amount:</td>
             <td id="${type}TotalDisplay">৳${pendingTotalAmount.toLocaleString()}</td>
@@ -754,7 +758,6 @@
         </tr>`;
         tbody.innerHTML += totalRow;
 
-        // Auto-resize all textareas after loading
         setTimeout(() => {
             document.querySelectorAll(`#${type}TableBody .table-reason-input`).forEach(ta => autoResize(ta));
         }, 10);
