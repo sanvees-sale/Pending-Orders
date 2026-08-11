@@ -186,7 +186,7 @@
             flex-wrap: wrap;
         }
 
-        input[type="text"], input[type="number"], textarea {
+        input[type="text"], input[type="number"] {
             padding: 10px 14px;
             border: 1px solid var(--border-dark);
             border-radius: 6px;
@@ -194,10 +194,9 @@
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
             background-color: #fff;
-            font-family: inherit;
         }
 
-        input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+        input[type="text"]:focus, input[type="number"]:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
@@ -253,7 +252,7 @@
             background-color: #334155;
         }
 
-        /* Table & Editable Inputs */
+        /* Table & Inline Amount Input */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -277,28 +276,7 @@
             border-bottom: 2px solid var(--border-dark);
         }
 
-        /* Clean Auto-expanding Textarea without ugly scrollbars */
-        .table-reason-input {
-            width: 95%;
-            border: none;
-            background: transparent;
-            font-family: inherit;
-            font-size: 14px;
-            color: var(--text-main);
-            resize: none;
-            outline: none;
-            overflow: hidden;
-            text-align: center;
-            padding: 4px;
-            line-height: 1.4;
-        }
-
-        .table-reason-input:focus {
-            background: #f8fafc;
-            border: 1px dashed var(--border-dark);
-            border-radius: 4px;
-        }
-
+        /* Inline Table Amount Input */
         .table-amount-input {
             width: 90px;
             padding: 5px 8px;
@@ -390,15 +368,12 @@
                 margin-bottom: 20px;
             }
 
-            .table-reason-input, .table-amount-input {
+            .table-amount-input {
                 border: none;
                 background: transparent;
-                resize: none;
                 appearance: none;
+                font-weight: 600;
                 padding: 0;
-                font-family: inherit;
-                font-size: 13px;
-                text-align: center;
             }
 
             .status-select {
@@ -632,9 +607,7 @@
             let row = `<tr>
                 <td>${index + 1}</td>
                 <td><b>${order.orderNo}</b></td>
-                <td>
-                    <textarea class="table-reason-input" rows="1" oninput="autoResize(this); updateReasonInline('${type}', ${index}, this)">${order.orderReason || ''}</textarea>
-                </td>
+                <td>${order.orderReason}</td>
                 <td>
                     <input type="number" class="table-amount-input" value="${orderAmount}" oninput="updateAmountInline('${type}', ${index}, this)">
                 </td>
@@ -657,31 +630,15 @@
             <td></td>
         </tr>`;
         tbody.innerHTML += totalRow;
-
-        // Auto-resize all textareas after loading
-        setTimeout(() => {
-            document.querySelectorAll(`#${type}TableBody .table-reason-input`).forEach(ta => autoResize(ta));
-        }, 10);
-    }
-
-    function autoResize(textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = (textarea.scrollHeight) + 'px';
-    }
-
-    async function updateReasonInline(type, index, textareaElement) {
-        let selectedDate = await getActiveDate();
-        let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
-        orders[index].orderReason = textareaElement.value;
-        await window.fbSaveOrder(type, selectedDate, orders);
     }
 
     async function updateAmountInline(type, index, inputElement) {
         let selectedDate = await getActiveDate();
         let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         orders[index].amount = parseFloat(inputElement.value) || 0;
-        await window.fbSaveName = await window.fbSaveOrder(type, selectedDate, orders);
+        await window.fbSaveOrder(type, selectedDate, orders);
 
+        // Recalculate total immediately without reloading whole table to preserve focus
         let totalAmount = orders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
         document.getElementById(type + 'TotalDisplay').innerText = '৳' + totalAmount.toLocaleString();
     }
