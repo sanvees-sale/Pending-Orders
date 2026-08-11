@@ -186,7 +186,7 @@
             flex-wrap: wrap;
         }
 
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], textarea {
             padding: 10px 14px;
             border: 1px solid var(--border-dark);
             border-radius: 6px;
@@ -194,9 +194,10 @@
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
             background-color: #fff;
+            font-family: inherit;
         }
 
-        input[type="text"]:focus, input[type="number"]:focus {
+        input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
@@ -252,7 +253,7 @@
             background-color: #334155;
         }
 
-        /* Table & Inline Amount Input */
+        /* Table & Editable Inputs */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -276,7 +277,28 @@
             border-bottom: 2px solid var(--border-dark);
         }
 
-        /* Inline Table Amount Input */
+        /* Clean Auto-expanding Textarea without ugly scrollbars */
+        .table-reason-input {
+            width: 95%;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--text-main);
+            resize: none;
+            outline: none;
+            overflow: hidden;
+            text-align: center;
+            padding: 4px;
+            line-height: 1.4;
+        }
+
+        .table-reason-input:focus {
+            background: #f8fafc;
+            border: 1px dashed var(--border-dark);
+            border-radius: 4px;
+        }
+
         .table-amount-input {
             width: 90px;
             padding: 5px 8px;
@@ -343,6 +365,84 @@
             color: #0f172a;
         }
 
+        /* Confirmation Custom Modal Styling */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(2px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 24px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            animation: modalPop 0.2s ease-out;
+        }
+
+        @keyframes modalPop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: var(--text-main);
+        }
+
+        .modal-box p {
+            margin: 0 0 20px 0;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .modal-btn-cancel {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid var(--border-dark);
+        }
+
+        .modal-btn-cancel:hover {
+            background-color: #e2e8f0;
+        }
+
+        .modal-btn-confirm {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            background-color: #dc2626;
+        }
+
         /* Print Settings */
         @media print {
             body {
@@ -355,7 +455,7 @@
                 max-width: 100%;
                 border: none;
             }
-            .tabs, .form-group, .print-btn, .delete-link, .top-checking-bar {
+            .tabs, .form-group, .print-btn, .delete-link, .top-checking-bar, .modal-overlay {
                 display: none !important;
             }
             
@@ -368,12 +468,15 @@
                 margin-bottom: 20px;
             }
 
-            .table-amount-input {
+            .table-reason-input, .table-amount-input {
                 border: none;
                 background: transparent;
+                resize: none;
                 appearance: none;
-                font-weight: 600;
                 padding: 0;
+                font-family: inherit;
+                font-size: 13px;
+                text-align: center;
             }
 
             .status-select {
@@ -469,7 +572,21 @@
     </div>
 </div>
 
+<!-- Custom Confirmation Modal -->
+<div id="customConfirmModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Are you sure?</h3>
+        <p>Do you really want to delete this order? This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">Cancel</button>
+            <button class="modal-btn modal-btn-confirm" id="confirmDeleteBtn">Yes, Delete</button>
+        </div>
+    </div>
+</div>
+
 <script>
+    let deleteTarget = null;
+
     document.addEventListener("DOMContentLoaded", async () => {
         const todayStr = new Date().toISOString().split('T')[0];
         
@@ -607,7 +724,9 @@
             let row = `<tr>
                 <td>${index + 1}</td>
                 <td><b>${order.orderNo}</b></td>
-                <td>${order.orderReason}</td>
+                <td>
+                    <textarea class="table-reason-input" rows="1" oninput="autoResize(this); updateReasonInline('${type}', ${index}, this)">${order.orderReason || ''}</textarea>
+                </td>
                 <td>
                     <input type="number" class="table-amount-input" value="${orderAmount}" oninput="updateAmountInline('${type}', ${index}, this)">
                 </td>
@@ -617,7 +736,7 @@
                         <option value="sent" ${order.status === 'sent' ? 'selected' : ''}>Parcel Sent</option>
                         <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
                     </select>
-                    <button class="delete-link" onclick="deleteOrder('${type}', ${index})">✕</button>
+                    <button class="delete-link" onclick="promptDelete('${type}', ${index})">✕</button>
                 </td>
             </tr>`;
             tbody.innerHTML += row;
@@ -630,6 +749,23 @@
             <td></td>
         </tr>`;
         tbody.innerHTML += totalRow;
+
+        // Auto-resize all textareas after loading
+        setTimeout(() => {
+            document.querySelectorAll(`#${type}TableBody .table-reason-input`).forEach(ta => autoResize(ta));
+        }, 10);
+    }
+
+    function autoResize(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = (textarea.scrollHeight) + 'px';
+    }
+
+    async function updateReasonInline(type, index, textareaElement) {
+        let selectedDate = await getActiveDate();
+        let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
+        orders[index].orderReason = textareaElement.value;
+        await window.fbSaveOrder(type, selectedDate, orders);
     }
 
     async function updateAmountInline(type, index, inputElement) {
@@ -638,7 +774,6 @@
         orders[index].amount = parseFloat(inputElement.value) || 0;
         await window.fbSaveOrder(type, selectedDate, orders);
 
-        // Recalculate total immediately without reloading whole table to preserve focus
         let totalAmount = orders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
         document.getElementById(type + 'TotalDisplay').innerText = '৳' + totalAmount.toLocaleString();
     }
@@ -651,13 +786,28 @@
         selectElement.className = 'status-select status-' + selectElement.value;
     }
 
-    async function deleteOrder(type, index) {
+    function promptDelete(type, index) {
+        deleteTarget = { type, index };
+        document.getElementById('customConfirmModal').style.display = 'flex';
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('customConfirmModal').style.display = 'none';
+        deleteTarget = null;
+    }
+
+    document.getElementById('confirmDeleteBtn').onclick = async function() {
+        if (!deleteTarget) return;
+        let { type, index } = deleteTarget;
+        
         let selectedDate = await getActiveDate();
         let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         orders.splice(index, 1);
         await window.fbSaveOrder(type, selectedDate, orders);
+        
+        closeConfirmModal();
         await loadOrders(type);
-    }
+    };
 
     function preparePrint(type) {
         let selectedDate = document.getElementById('checkDateInput').value;
