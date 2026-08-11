@@ -252,7 +252,7 @@
             background-color: #334155;
         }
 
-        /* Clean Normal Border Table & Centered Text */
+        /* Table & Inline Amount Input */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -274,6 +274,23 @@
             font-weight: 600;
             border-top: 1px solid var(--border);
             border-bottom: 2px solid var(--border-dark);
+        }
+
+        /* Inline Table Amount Input */
+        .table-amount-input {
+            width: 90px;
+            padding: 5px 8px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid var(--border-dark);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .table-amount-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
         }
 
         /* Status Dropdown Design */
@@ -349,6 +366,14 @@
                 font-weight: 600;
                 color: #334155;
                 margin-bottom: 20px;
+            }
+
+            .table-amount-input {
+                border: none;
+                background: transparent;
+                appearance: none;
+                font-weight: 600;
+                padding: 0;
             }
 
             .status-select {
@@ -583,7 +608,9 @@
                 <td>${index + 1}</td>
                 <td><b>${order.orderNo}</b></td>
                 <td>${order.orderReason}</td>
-                <td>৳${orderAmount.toLocaleString()}</td>
+                <td>
+                    <input type="number" class="table-amount-input" value="${orderAmount}" oninput="updateAmountInline('${type}', ${index}, this)">
+                </td>
                 <td>
                     <select class="status-select ${statusClass}" onchange="updateStatus('${type}', ${index}, this)">
                         <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
@@ -599,10 +626,21 @@
         // Append Total Row at the bottom
         let totalRow = `<tr class="total-row">
             <td colspan="3" style="text-align: right;">Total Amount:</td>
-            <td>৳${totalAmount.toLocaleString()}</td>
+            <td id="${type}TotalDisplay">৳${totalAmount.toLocaleString()}</td>
             <td></td>
         </tr>`;
         tbody.innerHTML += totalRow;
+    }
+
+    async function updateAmountInline(type, index, inputElement) {
+        let selectedDate = await getActiveDate();
+        let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
+        orders[index].amount = parseFloat(inputElement.value) || 0;
+        await window.fbSaveOrder(type, selectedDate, orders);
+
+        // Recalculate total immediately without reloading whole table to preserve focus
+        let totalAmount = orders.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
+        document.getElementById(type + 'TotalDisplay').innerText = '৳' + totalAmount.toLocaleString();
     }
 
     async function updateStatus(type, index, selectElement) {
