@@ -277,26 +277,14 @@
             border-bottom: 2px solid var(--border-dark);
         }
 
-        /* Clean Auto-expanding Textarea without ugly scrollbars */
-        .table-reason-input {
-            width: 95%;
-            border: none;
-            background: transparent;
-            font-family: inherit;
-            font-size: 14px;
-            color: var(--text-main);
-            resize: none;
-            outline: none;
-            overflow: hidden;
+        /* Static reason view cell styling */
+        .table-reason-text {
             text-align: center;
+            color: var(--text-main);
+            font-size: 14px;
+            word-break: break-word;
+            white-space: pre-wrap;
             padding: 4px;
-            line-height: 1.4;
-        }
-
-        .table-reason-input:focus {
-            background: #f8fafc;
-            border: 1px dashed var(--border-dark);
-            border-radius: 4px;
         }
 
         .table-amount-input {
@@ -468,20 +456,22 @@
                 margin-bottom: 20px;
             }
 
-            .table-reason-input, .table-amount-input {
+            .table-reason-text {
+                font-size: 13px;
+                text-align: center;
+                overflow: visible !important;
+                white-space: pre-wrap !important;
+                word-break: break-word !important;
+            }
+
+            .table-amount-input {
                 border: none;
                 background: transparent;
-                resize: none;
                 appearance: none;
                 padding: 0;
                 font-family: inherit;
                 font-size: 13px;
                 text-align: center;
-                /* Force full text to wrap and show fully during print without clipping or hiding */
-                overflow: visible !important;
-                white-space: pre-wrap !important;
-                word-break: break-word !important;
-                height: auto !important;
             }
 
             .status-select {
@@ -734,7 +724,7 @@
                 <td>${index + 1}</td>
                 <td><b>${order.orderNo}</b></td>
                 <td>
-                    <textarea class="table-reason-input" rows="1" oninput="autoResize(this); updateReasonInline('${type}', ${index}, this)">${order.orderReason || ''}</textarea>
+                    <div class="table-reason-text">${order.orderReason || ''}</div>
                 </td>
                 <td>
                     <input type="number" class="table-amount-input" value="${orderAmount}" oninput="updateAmountInline('${type}', ${index}, this)">
@@ -757,22 +747,6 @@
             <td></td>
         </tr>`;
         tbody.innerHTML += totalRow;
-
-        setTimeout(() => {
-            document.querySelectorAll(`#${type}TableBody .table-reason-input`).forEach(ta => autoResize(ta));
-        }, 10);
-    }
-
-    function autoResize(textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = (textarea.scrollHeight) + 'px';
-    }
-
-    async function updateReasonInline(type, index, textareaElement) {
-        let selectedDate = await getActiveDate();
-        let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
-        orders[index].orderReason = textareaElement.value;
-        await window.fbSaveOrder(type, selectedDate, orders);
     }
 
     async function updateAmountInline(type, index, inputElement) {
