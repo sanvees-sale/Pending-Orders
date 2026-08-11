@@ -83,7 +83,7 @@
         }
 
         .container {
-            max-width: 950px;
+            max-width: 1050px;
             margin: 0 auto;
             background: var(--card-bg);
             padding: 40px;
@@ -186,21 +186,34 @@
             flex-wrap: wrap;
         }
 
-        input[type="text"] {
-            flex: 1;
+        input[type="text"], input[type="number"] {
             padding: 10px 14px;
             border: 1px solid var(--border-dark);
             border-radius: 6px;
             font-size: 14px;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
-            min-width: 200px;
             background-color: #fff;
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus, input[type="number"]:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-order {
+            flex: 2;
+            min-width: 180px;
+        }
+
+        .input-reason {
+            flex: 2;
+            min-width: 180px;
+        }
+
+        .input-amount {
+            flex: 1;
+            min-width: 120px;
         }
 
         .add-btn {
@@ -248,7 +261,7 @@
         }
 
         th, td {
-            padding: 12px 16px;
+            padding: 12px 14px;
             text-align: center;
             vertical-align: middle;
             font-size: 14px;
@@ -302,6 +315,15 @@
         .delete-link:hover {
             color: #dc2626;
             text-decoration: underline;
+        }
+
+        /* Total Row Styling */
+        .total-row td {
+            font-weight: 700;
+            background-color: #f8fafc;
+            border-top: 2px solid var(--border-dark);
+            border-bottom: 2px solid var(--border-dark);
+            color: #0f172a;
         }
 
         /* Print Settings */
@@ -374,18 +396,20 @@
         </div>
         <div class="print-date-title" id="printDateTitleTony"></div>
         <div class="form-group">
-            <input type="text" id="tonyOrderNo" placeholder="Order Number / Customer Name">
-            <input type="text" id="tonyReason" placeholder="Pending Reason (e.g. Size stock out)">
+            <input type="text" id="tonyOrderNo" class="input-order" placeholder="Order Number / Customer Name">
+            <input type="text" id="tonyReason" class="input-reason" placeholder="Pending Reason (e.g. Size stock out)">
+            <input type="number" id="tonyAmount" class="input-amount" placeholder="Amount (BDT)">
             <button class="add-btn" onclick="addOrder('tony')">Add Order</button>
         </div>
         <button class="print-btn" onclick="preparePrint('tony')">🖨️ Print / Save as PDF</button>
         <table>
             <thead>
                 <tr>
-                    <th width="8%">#</th>
-                    <th width="32%">Order Number / Details</th>
-                    <th width="35%">Pending Reason</th>
-                    <th width="25%">Action / Status</th>
+                    <th width="7%">#</th>
+                    <th width="28%">Order Number / Details</th>
+                    <th width="33%">Pending Reason</th>
+                    <th width="14%">Amount</th>
+                    <th width="18%">Action / Status</th>
                 </tr>
             </thead>
             <tbody id="tonyTableBody"></tbody>
@@ -399,18 +423,20 @@
         </div>
         <div class="print-date-title" id="printDateTitleSanvees"></div>
         <div class="form-group">
-            <input type="text" id="sanveesOrderNo" placeholder="Order Number / Customer Name">
-            <input type="text" id="sanveesReason" placeholder="Pending Reason (e.g. Advance missing)">
+            <input type="text" id="sanveesOrderNo" class="input-order" placeholder="Order Number / Customer Name">
+            <input type="text" id="sanveesReason" class="input-reason" placeholder="Pending Reason (e.g. Advance missing)">
+            <input type="number" id="sanveesAmount" class="input-amount" placeholder="Amount (BDT)">
             <button class="add-btn" onclick="addOrder('sanvees')">Add Order</button>
         </div>
         <button class="print-btn" onclick="preparePrint('sanvees')">🖨️ Print / Save as PDF</button>
         <table>
             <thead>
                 <tr>
-                    <th width="8%">#</th>
-                    <th width="32%">Order Number / Details</th>
-                    <th width="35%">Pending Reason</th>
-                    <th width="25%">Action / Status</th>
+                    <th width="7%">#</th>
+                    <th width="28%">Order Number / Details</th>
+                    <th width="33%">Pending Reason</th>
+                    <th width="14%">Amount</th>
+                    <th width="18%">Action / Status</th>
                 </tr>
             </thead>
             <tbody id="sanveesTableBody"></tbody>
@@ -422,7 +448,6 @@
     document.addEventListener("DOMContentLoaded", async () => {
         const todayStr = new Date().toISOString().split('T')[0];
         
-        // Set top checking input to today's date automatically
         document.getElementById('checkDateInput').value = todayStr;
 
         await checkAndCarryForwardPendingOrders('tony', todayStr);
@@ -480,7 +505,8 @@
                     if (!pendingMap.has(order.orderNo)) {
                         pendingMap.set(order.orderNo, { 
                             orderNo: order.orderNo, 
-                            orderReason: order.orderReason, 
+                            orderReason: order.orderReason,
+                            amount: order.amount !== undefined ? order.amount : 0,
                             status: 'pending' 
                         });
                         updated = true;
@@ -502,9 +528,11 @@
     async function addOrder(type) {
         let orderNoInput = document.getElementById(type + 'OrderNo');
         let reasonInput = document.getElementById(type + 'Reason');
+        let amountInput = document.getElementById(type + 'Amount');
         
         let orderNo = orderNoInput.value.trim();
         let orderReason = reasonInput.value.trim();
+        let amount = parseFloat(amountInput.value) || 0;
         let selectedDate = await getActiveDate();
 
         if (!selectedDate) {
@@ -519,11 +547,12 @@
 
         let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
         
-        orders.push({ orderNo, orderReason, status: 'pending' });
+        orders.push({ orderNo, orderReason, amount, status: 'pending' });
         await window.fbSaveOrder(type, selectedDate, orders);
 
         orderNoInput.value = "";
         reasonInput.value = "";
+        amountInput.value = "";
 
         await loadOrders(type);
     }
@@ -532,7 +561,6 @@
         let selectedDate = await getActiveDate();
         if (!selectedDate) return;
 
-        // Ensure carry forward runs if looking at today or past dates
         await checkAndCarryForwardPendingOrders(type, selectedDate);
 
         let orders = (await window.fbLoadOrders(type, selectedDate)) || [];
@@ -540,16 +568,22 @@
         tbody.innerHTML = "";
 
         if (orders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--text-muted); border-bottom: 1px solid var(--border);">No orders found for this date.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); border-bottom: 1px solid var(--border);">No orders found for this date.</td></tr>`;
             return;
         }
 
+        let totalAmount = 0;
+
         orders.forEach((order, index) => {
+            let orderAmount = parseFloat(order.amount) || 0;
+            totalAmount += orderAmount;
+
             let statusClass = 'status-' + order.status;
             let row = `<tr>
                 <td>${index + 1}</td>
                 <td><b>${order.orderNo}</b></td>
                 <td>${order.orderReason}</td>
+                <td>৳${orderAmount.toLocaleString()}</td>
                 <td>
                     <select class="status-select ${statusClass}" onchange="updateStatus('${type}', ${index}, this)">
                         <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
@@ -561,6 +595,14 @@
             </tr>`;
             tbody.innerHTML += row;
         });
+
+        // Append Total Row at the bottom
+        let totalRow = `<tr class="total-row">
+            <td colspan="3" style="text-align: right;">Total Amount:</td>
+            <td>৳${totalAmount.toLocaleString()}</td>
+            <td></td>
+        </tr>`;
+        tbody.innerHTML += totalRow;
     }
 
     async function updateStatus(type, index, selectElement) {
