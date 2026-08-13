@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Orders Management Hub</title>
     
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <!-- Firebase SDK (Modular v10) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -63,62 +66,67 @@
 
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-color: #f8fafc;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f1f5f9;
             --card-bg: #ffffff;
-            --text-main: #0f172a;
+            --text-main: #1e293b;
             --text-muted: #64748b;
             --border: #e2e8f0;
-            --border-dark: #cbd5e1;
+            --border-focus: #818cf8;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
         }
 
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
-            padding: 40px 20px;
+            padding: 40px 16px;
             -webkit-font-smoothing: antialiased;
         }
 
         .container {
-            max-width: 1050px;
+            max-width: 1100px;
             margin: 0 auto;
             background: var(--card-bg);
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(226, 232, 240, 0.8);
             position: relative;
         }
 
         /* Top Bar for Checking Previous Date */
         .top-checking-bar {
             position: absolute;
-            top: 25px;
+            top: 32px;
             right: 40px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: #f1f5f9;
-            padding: 6px 12px;
-            border-radius: 8px;
+            gap: 10px;
+            background: #f8fafc;
+            padding: 8px 14px;
+            border-radius: 12px;
             border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
             z-index: 10;
         }
 
         .top-checking-bar label {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--text-muted);
         }
 
         .top-checking-bar input[type="date"] {
-            border: 1px solid var(--border-dark);
-            border-radius: 6px;
-            padding: 3px 6px;
-            font-size: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-main);
             background: white;
             outline: none;
             cursor: pointer;
@@ -128,78 +136,94 @@
         .tabs {
             display: flex;
             justify-content: center;
-            gap: 12px;
-            margin-bottom: 30px;
+            gap: 10px;
+            margin-bottom: 35px;
+            background: #f8fafc;
+            padding: 6px;
+            border-radius: 14px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid var(--border);
         }
 
         .tab-btn {
             padding: 10px 24px;
-            background-color: #f1f5f9;
+            background-color: transparent;
             color: var(--text-muted);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            border: none;
+            border-radius: 10px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 14px;
-            transition: all 0.2s ease;
+            transition: all 0.25s ease;
         }
 
         .tab-btn:hover {
-            background-color: #e2e8f0;
             color: var(--text-main);
         }
 
         .tab-btn.active {
-            background-color: var(--primary);
-            color: white;
-            border-color: var(--primary);
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+            background-color: white;
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
         }
 
         .tab-content {
             display: none;
+            animation: fadeIn 0.3s ease-in-out;
         }
 
         .tab-content.active {
             display: block;
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Typography & Header */
         .page-header {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
         }
 
         h2 {
             color: var(--text-main);
-            margin: 0 0 6px 0;
-            font-size: 24px;
+            margin: 0;
+            font-size: 26px;
             font-weight: 700;
-            letter-spacing: -0.025em;
+            letter-spacing: -0.03em;
         }
 
         /* Form Controls */
         .form-group {
             display: flex;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
         }
 
-        input[type="text"], input[type="number"], textarea {
-            padding: 10px 14px;
-            border: 1px solid var(--border-dark);
-            border-radius: 6px;
+        input[type="text"], input[type="number"] {
+            padding: 11px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.2s;
             background-color: #fff;
             font-family: inherit;
+            color: var(--text-main);
         }
 
-        input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
         .input-order {
@@ -218,51 +242,62 @@
         }
 
         .add-btn {
-            padding: 10px 20px;
-            background-color: #059669;
+            padding: 11px 22px;
+            background-color: #10b981;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 14px;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
         }
 
         .add-btn:hover {
-            background-color: #047857;
+            background-color: #059669;
+        }
+
+        .add-btn:active {
+            transform: scale(0.98);
         }
 
         .print-btn {
-            padding: 8px 16px;
-            background-color: #475569;
+            padding: 9px 18px;
+            background-color: #334155;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 13px;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             transition: background 0.2s;
+            box-shadow: var(--shadow-sm);
         }
 
         .print-btn:hover {
-            background-color: #334155;
+            background-color: #1e293b;
         }
 
-        /* Table & Editable Inputs */
+        /* Table & Inputs */
+        .table-container {
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 5px;
             background-color: white;
         }
 
         th, td {
-            padding: 12px 14px;
+            padding: 14px 16px;
             text-align: center;
             vertical-align: middle;
             font-size: 14px;
@@ -271,13 +306,16 @@
 
         th {
             background-color: #f8fafc;
-            color: #334155;
+            color: #475569;
             font-weight: 600;
-            border-top: 1px solid var(--border);
-            border-bottom: 2px solid var(--border-dark);
+            border-bottom: 2px solid var(--border);
+            letter-spacing: -0.01em;
         }
 
-        /* Static reason view cell styling */
+        tr:last-child td {
+            border-bottom: none;
+        }
+
         .table-reason-text {
             text-align: center;
             color: var(--text-main);
@@ -285,72 +323,86 @@
             word-break: break-word;
             white-space: pre-wrap;
             padding: 4px;
+            line-height: 1.5;
         }
 
         .table-amount-input {
-            width: 90px;
-            padding: 5px 8px;
+            width: 95px;
+            padding: 6px 10px;
             text-align: center;
             font-size: 13px;
             font-weight: 600;
-            border: 1px solid var(--border-dark);
-            border-radius: 4px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             outline: none;
+            background: #fff;
+            color: var(--text-main);
         }
 
         .table-amount-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
         /* Status Dropdown Design */
         .status-select {
-            padding: 5px 10px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 8px;
             font-size: 12px;
             font-weight: 600;
-            border: 1px solid var(--border-dark);
+            border: 1px solid transparent;
             cursor: pointer;
             outline: none;
+            transition: all 0.2s;
         }
 
         .status-pending {
             background-color: #fef3c7;
             color: #b45309;
+            border-color: #fde68a;
         }
 
         .status-sent {
             background-color: #d1fae5;
             color: #047857;
+            border-color: #a7f3d0;
         }
 
         .status-cancelled {
             background-color: #fee2e2;
             color: #b91c1c;
+            border-color: #fecaca;
         }
 
         .delete-link {
-            background: none;
+            background: #fee2e2;
             border: none;
             color: #ef4444;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
             margin-left: 8px;
-            font-weight: 600;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
         }
 
         .delete-link:hover {
-            color: #dc2626;
-            text-decoration: underline;
+            background: #ef4444;
+            color: white;
         }
 
         /* Total Row Styling */
         .total-row td {
             font-weight: 700;
             background-color: #f8fafc;
-            border-top: 2px solid var(--border-dark);
-            border-bottom: 2px solid var(--border-dark);
+            border-top: 2px solid var(--border);
             color: #0f172a;
+            font-size: 14px;
         }
 
         /* Confirmation Custom Modal Styling */
@@ -361,8 +413,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(2px);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
             z-index: 9999;
             justify-content: center;
             align-items: center;
@@ -370,30 +422,32 @@
 
         .modal-box {
             background: white;
-            padding: 24px 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
             text-align: center;
             max-width: 380px;
             width: 90%;
-            animation: modalPop 0.2s ease-out;
+            animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes modalPop {
-            0% { transform: scale(0.95); opacity: 0; }
+            0% { transform: scale(0.9); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
 
         .modal-box h3 {
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             font-size: 18px;
+            font-weight: 700;
             color: var(--text-main);
         }
 
         .modal-box p {
-            margin: 0 0 20px 0;
+            margin: 0 0 24px 0;
             font-size: 14px;
             color: var(--text-muted);
+            line-height: 1.5;
         }
 
         .modal-actions {
@@ -403,8 +457,8 @@
         }
 
         .modal-btn {
-            padding: 8px 18px;
-            border-radius: 6px;
+            padding: 10px 20px;
+            border-radius: 10px;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
@@ -415,7 +469,7 @@
         .modal-btn-cancel {
             background-color: #f1f5f9;
             color: var(--text-main);
-            border: 1px solid var(--border-dark);
+            border: 1px solid var(--border);
         }
 
         .modal-btn-cancel:hover {
@@ -486,7 +540,7 @@
                 width: 100%;
             }
             th, td {
-                border: 1px solid #94a3b8 !important;
+                border: 1px solid #cbd5e1 !important;
                 padding: 10px;
                 text-align: center !important;
                 vertical-align: middle !important;
@@ -526,18 +580,20 @@
             <button class="add-btn" onclick="addOrder('tony')">Add Order</button>
         </div>
         <button class="print-btn" onclick="preparePrint('tony')">🖨️ Print / Save as PDF</button>
-        <table>
-            <thead>
-                <tr>
-                    <th width="7%">#</th>
-                    <th width="28%">Order Number / Details</th>
-                    <th width="33%">Pending Reason</th>
-                    <th width="14%">Amount</th>
-                    <th width="18%">Action / Status</th>
-                </tr>
-            </thead>
-            <tbody id="tonyTableBody"></tbody>
-        </table>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="7%">#</th>
+                        <th width="28%">Order Number / Details</th>
+                        <th width="33%">Pending Reason</th>
+                        <th width="14%">Amount</th>
+                        <th width="18%">Action / Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tonyTableBody"></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- TAB 2: Sanvee's -->
@@ -553,18 +609,20 @@
             <button class="add-btn" onclick="addOrder('sanvees')">Add Order</button>
         </div>
         <button class="print-btn" onclick="preparePrint('sanvees')">🖨️ Print / Save as PDF</button>
-        <table>
-            <thead>
-                <tr>
-                    <th width="7%">#</th>
-                    <th width="28%">Order Number / Details</th>
-                    <th width="33%">Pending Reason</th>
-                    <th width="14%">Amount</th>
-                    <th width="18%">Action / Status</th>
-                </tr>
-            </thead>
-            <tbody id="sanveesTableBody"></tbody>
-        </table>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="7%">#</th>
+                        <th width="28%">Order Number / Details</th>
+                        <th width="33%">Pending Reason</th>
+                        <th width="14%">Amount</th>
+                        <th width="18%">Action / Status</th>
+                    </tr>
+                </thead>
+                <tbody id="sanveesTableBody"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -706,7 +764,7 @@
         tbody.innerHTML = "";
 
         if (orders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); border-bottom: 1px solid var(--border);">No orders found for this date.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 30px;">No orders found for this date.</td></tr>`;
             return;
         }
 
@@ -738,7 +796,7 @@
                         <option value="sent" ${order.status === 'sent' ? 'selected' : ''}>Parcel Sent</option>
                         <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
                     </select>
-                    <button class="delete-link" onclick="promptDelete('${type}', ${index})">✕</button>
+                    <button class="delete-link" onclick="promptDelete('${type}', ${index})" title="Delete">✕</button>
                 </td>
             </tr>`;
             tbody.innerHTML += row;
@@ -803,6 +861,7 @@
         deleteTarget = null;
     }
 
+    document.getElementById('confirmTestBtn').onclick = null; // Clean up
     document.getElementById('confirmDeleteBtn').onclick = async function() {
         if (!deleteTarget) return;
         let { type, index } = deleteTarget;
